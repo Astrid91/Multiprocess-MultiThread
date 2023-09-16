@@ -1,274 +1,150 @@
-import copy
+from time import time
+from multiprocessing import Process, Queue
+import threading
+from datetime import datetime, timedelta
 
-def method1( lines, page, ans, pf, Page_Fault, Page_Replaces, Page_Frames ) :
-    tmp = []
-    for i in range ( len(lines) ):
-        find = False
-        for p in range ( len(page) ):
-            if ( page[p] == lines[i] ) : 
-                find = True
-                pf[i] = True 
+def Bubblesort( data ):
+    n = len( data )
+    for i in range( n ):
+        for j in range( 0, n-i-1 ):
+            if data[j] > data[j+1]:
+                data[j], data[j+1] = data[j+1], data[j]
 
-        if not find:
-            Page_Fault += 1
-                
-            if len(page) != size: 
-                Page_Frames += 1
-                page.append( lines[i] )
-            else: Page_Replaces += 1
-                    
-            for p in range ( len(page)-2, -1, -1 ):
-                page[p+1] = page[p]
+    return data
 
-            page[0] = lines[i]
+def Merge( left, right ):
+    sorted = []
+    while len( left ) != 0 and len( right ) != 0:
+        if ( left[0] > right[0] ):
+            sorted.append( right.pop(0) )
+        else:
+            sorted.append( left.pop(0) )
 
-        tmp = copy.deepcopy( page )
-        ans.append( tmp )
-        pf.append( False )
+    if ( len(left) != 0 ):       # 把剩下沒排完的陣列加入sorted
+        sorted += left
+    else:
+        sorted += right
+    return sorted
 
-    return ans, pf, Page_Fault, Page_Replaces, Page_Frames 
+def Mission1( data, result_queue, i ) :
+    result_queue.put( Bubblesort( data[i] ) )
 
-def method2( lines, page, ans, pf, Page_Fault, Page_Replaces, Page_Frames ) :
-    tmp = []
-    for i in range ( len(lines) ):
-        find = False
-        
-        for p in range ( len(page) ):
-            if ( page[p] == lines[i] ) : 
-                find = True
-                pf[i] = True 
-                tmp = page[p]
-                for j in range (p, -1, -1):
-                    page[j] = page[j-1]
+def Mission3( data, index, result_queue ):
+    data[0] = Merge(data[0], data[index])
+    result_queue.put(data[0])
 
-                page[0] = tmp
-
-        if not find:
-            Page_Fault += 1
-                
-            if len(page) != size: 
-                Page_Frames += 1
-                page.append( lines[i] )
-                for p in range ( len(page)-2, -1, -1 ):
-                    page[p+1] = page[p]
-
-                page[0] = lines[i]
-            else: 
-                Page_Replaces += 1
-                min = 0
-                minpage = 0
-                for p in range ( len(page) ):
-                    for j in range( i, -1, -1 ):
-                        if lines[j] == page[p] :
-                            if min == 0 or j < min:
-                                min = j
-                                minpage = p
-                            break 
-
-                for j in range (int(minpage), -1, -1):
-                    page[j] = page[j-1]
-
-                page[0] = lines[i]
-            
-        tmp = copy.deepcopy( page )
-        ans.append( tmp )
-        pf.append( False )
-
-    return ans, pf, Page_Fault, Page_Replaces, Page_Frames 
-
-def method3_4( lines, page, ans, pf, Page_Fault, Page_Replaces, Page_Frames, method ) :
-    tmp = []
-    f = []
-    for _ in range( len(lines)+1 ):
-        f.append( 0 )
-    
-    for i in range ( len(lines) ):
-        f[int(lines[i])] += 1
-        find = False
-        for p in range ( len(page) ):
-            if ( page[p] == lines[i] ): 
-                find = True
-                pf[i] = True 
-
-        if not find:
-            Page_Fault += 1
-                
-            if len(page) != size: 
-                Page_Frames += 1
-                page.append( lines[i] )
-                for p in range ( len(page)-2, -1, -1 ):
-                    page[p+1] = page[p]
-
-                page[0] = lines[i]
-            else:   
-                Page_Replaces += 1
-                key = 0
-
-                if method == 3:
-                    min = 0
-                     
-                    for j in range( len(page) ):
-                        if min == 0 or min >= f[int(page[j])] :
-                            min = f[int(page[j])]
-                            key = j
-                    
-                elif method == 4 : 
-                    max = 0
-                     
-                    for j in range( len(page) ):
-                        if max == 0 or max <= f[int(page[j])] :
-                            max = f[int(page[j])]
-                            key = j
-                    
-                f[int(page[key])] = 0
-                for j in range (int(key), -1, -1):
-                    page[j] = page[j-1]
-
-                page[0] = lines[i]
-
-        tmp = copy.deepcopy( page )
-        ans.append( tmp )
-        pf.append( False )
-
-    return ans, pf, Page_Fault, Page_Replaces, Page_Frames 
-
-def method5( lines, page, ans, pf, Page_Fault, Page_Replaces, Page_Frames ) :
-    tmp = []
-    f = []
-    for _ in range( len(lines)+1 ):
-        f.append( 0 )
-
-    for i in range ( len(lines) ):
-        find = False
-        f[int(lines[i])] += 1
-
-        for p in range ( len(page) ):
-            if ( page[p] == lines[i] ) : 
-                find = True
-                pf[i] = True 
-                tmp = page[p]
-                for j in range (p, -1, -1):
-                    page[j] = page[j-1]
-
-                page[0] = tmp
-        
-        if not find:
-            Page_Fault += 1
-                
-            if len(page) != size: 
-                Page_Frames += 1
-                page.append( lines[i] )
-                for p in range ( len(page)-2, -1, -1 ):
-                    page[p+1] = page[p]
-
-                page[0] = lines[i]
-            else: 
-                Page_Replaces += 1
-
-                key = 0
-                min = 0
-                     
-                for j in range( len(page) ):
-                    if min == 0 or min >= f[int(page[j])] :
-                        min = f[int(page[j])]
-                        key = j
-
-                f[int(page[key])] = 0
-                for j in range (int(key), -1, -1):
-                    page[j] = page[j-1]
-
-                page[0] = lines[i]
-                
-        tmp = copy.deepcopy( page )
-        ans.append( tmp )
-        pf.append( False )
-
-    return ans, pf, Page_Fault, Page_Replaces, Page_Frames 
-
-def HandleMethod( method, lines, six ):
-    page = []
-    ans = []
-    pf = []
-    for _ in range( len(lines)+1 ):
-        pf.append( False )
-
-    Page_Fault = 0
-    Page_Replaces = 0
-    Page_Frames = 0
-
+def HandleMethod( method, data, K ):
+    result_queue = Queue()
+    start = time()
     if method == 1:
-        ans, pf, Page_Fault, Page_Replaces, Page_Frames  = method1( lines, page, ans, pf, Page_Fault, Page_Replaces, Page_Frames )
-    elif method == 2:
-        ans, pf, Page_Fault, Page_Replaces, Page_Frames  = method2( lines, page, ans, pf, Page_Fault, Page_Replaces, Page_Frames )
-    elif method == 3:
-        ans, pf, Page_Fault, Page_Replaces, Page_Frames  = method3_4( lines, page, ans, pf, Page_Fault, Page_Replaces, Page_Frames, method )
-    elif method == 4:
-        ans, pf, Page_Fault, Page_Replaces, Page_Frames = method3_4( lines, page, ans, pf, Page_Fault, Page_Replaces, Page_Frames, method )
-    elif method == 5:
-        ans, pf, Page_Fault, Page_Replaces, Page_Frames = method5( lines, page, ans, pf, Page_Fault, Page_Replaces, Page_Frames )
+        Mission1( data, result_queue, 0 )
+        result = result_queue.get()
 
-    WriteFile( fileName, ans, pf, Page_Fault, Page_Replaces, Page_Frames, method, six )
-    return 
-            
-def ReadFile( fileName ):
+    elif method == 2:
+        for index in range(K):  # 要做K次 bubble sort
+            Bubblesort(data[index])  # 將排序好的存回 data
+
+        for i in range(1, K):  # 每兩筆合併
+            data[0] = Merge(data[0], data[i])  # 進行 merge_sort
+
+        result = data[0]
+
+    elif method == 3:
+        processes = []
+        for i in range(K):
+            process = Process( target = Mission1, args = ( data, result_queue, i ) )
+            processes.append(process)
+            process.start()
+            data[i] = result_queue.get()
+            process.join()
+
+        for i in range(K-1):
+            process = Process( target=Mission3, args=(data, i+1, result_queue ) )
+            processes.append(process)
+            process.start()
+            if i+1 != K-1:
+                data[0] = result_queue.get()
+
+        result = result_queue.get()
+
+    elif method == 4:
+        queues=[]
+        threads = []
+        for i in range(K):
+            result_queue = Queue()
+            queues.append(result_queue)
+            thread = threading.Thread( target = Mission1, args = ( data, result_queue, i ) )
+            threads.append(thread)
+            thread.start()
+
+        # 等待所有進程結束，並且將排序後的結果收集起來
+        results = []
+        for i in range(K):
+            threads[i].join()
+            results.append(queues[i].get())
+
+        # 用K-1個進程進行Mergesort
+        for i in range(K - 1):
+            thread = threading.Thread( target=Mission3, args=(results, i+1, result_queue ) )
+            threads.append(thread)
+            thread.start()
+            if i+1 != K-1:
+                results[0] = result_queue.get()
+
+        result = result_queue.get()
+
+    end = time()
+    runtime = end - start
+
+    return result, runtime
+
+def ReadFile( fileName, K, method ):
     f = open( fileName, 'r' )
-    temp = f.readline().split()
-    method = int(temp[0])
-    size = int(temp[1])
-
-    temp = f.readline().rstrip()  # 讀取一行字串並移除換行符號
-    lines = []
-    for char in temp:
-        lines.append( char )
-
-    return method, size, lines
-
-def WriteFile( fileName, ans, pf, Page_Fault, Page_Replaces, Page_Frames, method, six ):
-    fileName = "out_" + fileName
-    f = open( fileName, "a" )
-
+    lines = len( f.readlines()) # 獲取行數
+    f.close()
+    f = open( fileName, 'r' )
     if method == 1:
-        print('--------------FIFO-----------------------', file=f)
-    elif method == 2:
-        print('--------------LRU-----------------------', file=f)
-    elif method == 3:
-        print('--------------Least Frequently Used Page Replacement-----------------------', file=f)
-    elif method == 4:
-        print('--------------Most Frequently Used Page Replacement -----------------------', file=f)
-    elif method == 5:
-        print('--------------Least Frequently Used LRU Page Replacement-----------------------', file=f)
+        K = 1
+    count = int( lines/K )
+    if lines % K != 0:
+        count = count + 1
+    data = [[] * count for i in range(K)]  # 宣告二維陣列
     
-    for i in range( len(lines) ) :
-        print( lines[i], end = '	', file=f ) 
+    for i in range(K):
+        for j in range(count):
+            if lines == (i*count)+j:  # 到檔案末端
+                break
 
-        for j in range ( len(ans[i]) ) :
-            print( ans[i][j], end = '', file=f )
+            temp = f.readline()
+            data[i].append( int(temp) )
 
-        if size <= 3: 
-            print( "\t", end = '', file=f )
-        else: 
-            if len(ans[i]) < 4:
-                print( "\t\t", end = '', file=f )
-            else:
-                print( "\t", end = '', file=f )
+    f.close()
+    return data
 
-        if pf[i] == False: print( "F", file=f )
-        else: print( "", file=f )
-    
-    print( "Page Fault = %d  Page Replaces = %d  Page Frames = %d"  % (Page_Fault, Page_Replaces, Page_Frames), file=f)
-    if six and method != 5:
-        print( "", file=f )
+def WriteFile( fileName, method, result, runtime ):
+    fileName = fileName + "_output" + str(method)
+    f = open( fileName, "w" )
+
+    print('Sort :', file=f)
+
+    for i in range(len(result)):
+        print( '%s' % str(result[i]), file = f )
+        
+    print( 'CPU Time : %f' % runtime, file = f )
+
+    now_time = datetime.now()  # 獲取UTC time
+    utc_time = now_time - timedelta(hours=8)  # 减去8小时
+    utc_time = utc_time.strftime( "%Y-%m-%d %H:%M:%S.%f+08:00" )
+    print( 'Output Time : ' + utc_time , file = f )
+    f.close()
 
 if __name__ == '__main__':
     while 1:
         fileName = input( "請輸入檔案名稱:\n" )
+        K = int( input( "請輸入要切成幾份:\n" ) )
+        method = int( input( "請輸入方法編號:(方法1, 方法2, 方法3, 方法4)\n" ) )
+
         fileName = fileName + ".txt" ;
-
-        method, size, lines = ReadFile( fileName )
-        six = False
-        if method == 6:
-            six = True
-            for i in range(5) :
-                HandleMethod( i+1, lines, six )
-
-        else: HandleMethod( method, lines, six )
+        data = ReadFile( fileName, K, method )
+        result, runtime = HandleMethod( method, data, K )
+        WriteFile( fileName, method, result, runtime )
